@@ -17,7 +17,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Ejecutar script
-        env:
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python padel_bot.py
