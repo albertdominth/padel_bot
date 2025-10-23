@@ -23,13 +23,16 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: huecos.json
-          key: padel-cache-v2   # <--- 🔁 Cambia este número para "resetear"
+          key: padel-cache-v3
 
       - name: Instalar dependencias
         run: pip install requests pytz
 
       - name: Ejecutar script de comprobación
         id: run_script
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python padel_bot.py > output.txt || true
 
@@ -42,7 +45,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: huecos.json
-          key: padel-cache-v2   # <--- Debe coincidir con el de arriba
+          key: padel-cache-v3
 
       - name: Subir artefacto de salida (opcional)
         if: always()
