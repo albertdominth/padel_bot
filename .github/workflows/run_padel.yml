@@ -2,7 +2,7 @@ name: Padel Checker
 
 on:
   schedule:
-    - cron: "*/30 7-22 * * 1-5" # cada 30 minutos de lunes a viernes
+    - cron: "*/30 7-22 * * 1-5"
   workflow_dispatch:
 
 jobs:
@@ -19,27 +19,31 @@ jobs:
           python-version: '3.11'
 
       - name: Restaurar caché del resultado anterior
-        uses: actions/cache@v4
+        id: cache-restore
+        uses: actions/cache/restore@v4
         with:
           path: huecos.json
-          key: padel-cache
+          key: padel-cache-v2   # <--- 🔁 Cambia este número para "resetear"
 
       - name: Instalar dependencias
-        run: |
-          pip install requests pytz
+        run: pip install requests pytz
 
       - name: Ejecutar script de comprobación
         id: run_script
         run: |
           python padel_bot.py > output.txt || true
 
-      - name: Guardar nuevo resultado
+      - name: Mostrar salida
         if: always()
-        run: |
-          cat output.txt
-          # Actualizamos la caché con el nuevo fichero
-          echo "Actualizando cache..."
-      
+        run: cat output.txt
+
+      - name: Guardar nueva caché
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: huecos.json
+          key: padel-cache-v2   # <--- Debe coincidir con el de arriba
+
       - name: Subir artefacto de salida (opcional)
         if: always()
         uses: actions/upload-artifact@v4
