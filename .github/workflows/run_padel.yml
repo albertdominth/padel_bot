@@ -2,7 +2,7 @@ name: Padel Checker
 
 on:
   schedule:
-    - cron: "*/30 7-22 * * 1-5" # cada 30 minutos de lunes a viernes
+    - cron: "*/30 7-22 * * 1-5"  # cada 30 min de lunes a viernes
   workflow_dispatch:
 
 jobs:
@@ -25,24 +25,13 @@ jobs:
           key: padel-cache
 
       - name: Instalar dependencias
-        run: |
-          pip install requests pytz
+        run: pip install requests pytz
 
       - name: Ejecutar script de comprobación
-        id: run_script
-        run: |
-          python padel_bot.py > output.txt || true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python padel_checker.py > output.txt || true
 
-      - name: Guardar nuevo resultado
-        if: always()
-        run: |
-          cat output.txt
-          # Actualizamos la caché con el nuevo fichero
-          echo "Actualizando cache..."
-      
-      - name: Subir artefacto de salida (opcional)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: salida-padel
-          path: output.txt
+      - name: Mostrar salida
+        run: cat output.txt
