@@ -31,7 +31,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python padel_checker.py > output.txt || true
+        run: python padel_bot.py > output.txt || true
 
       - name: Mostrar salida
         run: cat output.txt
