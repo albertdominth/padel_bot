@@ -20,4 +20,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Ejecutar script
-        run: python padel_bot.py
+        run: python3 padel_bot.py
