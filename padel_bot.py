@@ -6,6 +6,7 @@ import subprocess
 import os
 import pytz
 import time
+import sys
 
 # === CONFIGURACIÓN ===
 os.environ["TZ"] = "Europe/Madrid"
@@ -26,15 +27,14 @@ HEADERS = {
 COOKIES = {
     "cb-enabled": "enabled",
     "MPOpcionCookie": "necesarios",
-    "ASP.NET_SessionId": "1uoyuc45nc2ljibx5plcoxav",
+    "ASP.NET_SessionId": "1uoyuc45nc2ljibx5plcoxav",  # ⚠️ cámbialo si tu sesión cambia
     "i18next": "ca-ES"
 }
 
 DURACION_MINUTOS = 90
 DIAS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
-
-# === FUNCIÓN PARA OBTENER TOKEN ===
+# === TOKEN DINÁMICO ===
 def obtener_token():
     curl_html = [
         "curl", "-s",
@@ -53,7 +53,7 @@ def obtener_token():
     return match.group(1)
 
 
-# === UTILIDADES ===
+# === FUNCIONES AUXILIARES ===
 def parse_ms_date(ms_date):
     if isinstance(ms_date, datetime):
         return ms_date
@@ -141,7 +141,7 @@ def buscar_huecos(json_data, franja_inicio, franja_fin, duracion_min=DURACION_MI
     return huecos_totales
 
 
-# === SELECCIÓN DE FRANJA SEGÚN EL DÍA ===
+# === FRANJAS SEGÚN DÍA ===
 def obtener_franja_por_dia(dia_semana):
     if dia_semana in range(0, 4):  # lunes a jueves
         return "18:30", "21:30"
@@ -151,7 +151,7 @@ def obtener_franja_por_dia(dia_semana):
         return None, None  # sábado y domingo fuera de horario
 
 
-# === FUNCIONES DE GUARDADO Y COMPARACIÓN ===
+# === GUARDADO Y COMPARACIÓN ===
 def cargar_resultados_previos():
     if os.path.exists(RESULT_FILE):
         with open(RESULT_FILE, "r", encoding="utf-8") as f:
@@ -174,10 +174,28 @@ def resultados_a_dict(lista_huecos):
     return salida
 
 
-# === EJECUCIÓN PRINCIPAL ===
+# === ENVIAR TELEGRAM ===
+def enviar_telegram(mensaje):
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        print("⚠️ Falta TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID.")
+        return
+
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {"chat_id": chat_id, "text": mensaje, "parse_mode": "HTML"}
+
+    try:
+        r = requests.post(url, data=payload, timeout=10)
+        if not r.ok:
+            print(f"⚠️ Error al enviar mensaje: {r.text}")
+    except Exception as e:
+        print(f"❌ Error enviando Telegram: {e}")
+
+
+# === MAIN ===
 if __name__ == "__main__":
     TOKEN = obtener_token()
-
     resultados_actuales = {}
     hoy = datetime.now().date()
 
@@ -210,12 +228,14 @@ if __name__ == "__main__":
     resultados_dict = resultados_a_dict(resultados_actuales)
 
     if resultados_dict != resultados_previos:
-        print("🔔 Novedades encontradas:")
+        mensaje = "🔔 <b>Novedades en reservas de pádel</b>\n"
         for dia, huecos in resultados_actuales.items():
-            print(f"\n📅 {dia}")
+            mensaje += f"\n📅 <b>{dia}</b>\n"
             for pista, inicio, fin in huecos:
-                print(f"  🟢 {pista}: {inicio.strftime('%H:%M')} - {fin.strftime('%H:%M')}")
+                mensaje += f"  🟢 {pista}: {inicio.strftime('%H:%M')} - {fin.strftime('%H:%M')}\n"
+
+        print(mensaje)
+        enviar_telegram(mensaje)
         guardar_resultados(resultados_dict)
     else:
-        # No imprime nada si no hay cambios
-        pass
+        sys.exit(0)
