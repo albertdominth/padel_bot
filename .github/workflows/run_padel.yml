@@ -1,23 +1,48 @@
-name: Ejecutar Padel Bot cada 15 minutos
+name: Padel Checker
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # cada 15 minutos
-  workflow_dispatch:          # permite ejecutarlo manualmente
+    - cron: "*/30 7-22 * * 1-5" # cada 30 minutos de lunes a viernes
+  workflow_dispatch:
 
 jobs:
-  run-script:
+  check-padel:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clonar el repositorio
-        uses: actions/checkout@v3
-        
-      - name: Mostrar archivos
-        run: ls -R
-        
-      - name: Instalar dependencias
-        run: pip install -r requirements.txt
+      - name: Checkout del código
+        uses: actions/checkout@v4
 
-      - name: Ejecutar script
-        run: python3 padel_bot.py
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Restaurar caché del resultado anterior
+        uses: actions/cache@v4
+        with:
+          path: huecos.json
+          key: padel-cache
+
+      - name: Instalar dependencias
+        run: |
+          pip install requests pytz
+
+      - name: Ejecutar script de comprobación
+        id: run_script
+        run: |
+          python padel_checker.py > output.txt || true
+
+      - name: Guardar nuevo resultado
+        if: always()
+        run: |
+          cat output.txt
+          # Actualizamos la caché con el nuevo fichero
+          echo "Actualizando cache..."
+      
+      - name: Subir artefacto de salida (opcional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: salida-padel
+          path: output.txt
