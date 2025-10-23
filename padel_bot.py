@@ -151,6 +151,7 @@ def obtener_franja_por_dia(dia_semana):
 if __name__ == "__main__":
     TOKEN = obtener_token()
 
+    print(f "Hola")
     hoy = datetime.now().date()
     for i in range(1, 4):  # próximos 3 días
         fecha_obj = hoy + timedelta(days=i)
