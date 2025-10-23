@@ -3,6 +3,13 @@ from datetime import datetime, timedelta
 import re
 import requests
 import subprocess
+import os
+import pytz
+from datetime import datetime, timedelta
+
+os.environ["TZ"] = "Europe/Madrid"
+import time
+time.tzset()
 
 # === CONFIGURACIÓN ===
 URL = "https://www.padelcpi.com/booking/srvc.aspx/ObtenerCuadro"
