@@ -24,13 +24,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Restaurar caché del resultado anterior
-        id: cache-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: huecos.json
-          key: padel-cache-v3
-
       - name: Instalar dependencias
         run: pip install requests pytz
 
@@ -45,13 +38,6 @@ jobs:
       - name: Mostrar salida
         if: always()
         run: cat output.txt
-
-      - name: Guardar nueva caché
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: huecos.json
-          key: padel-cache-v3
 
       - name: Subir artefacto de salida (opcional)
         if: always()
