@@ -27,7 +27,6 @@ jobs:
         run: pip install requests pytz
 
       - name: Ejecutar script de comprobación
-        id: run_script
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -37,20 +36,6 @@ jobs:
       - name: Mostrar salida
         if: always()
         run: cat output.txt
-
-      - name: Subir cambios si los hay
-        if: always()
-        run: |
-          git config --global user.name "Padel Bot"
-          git config --global user.email "padel-bot@users.noreply.github.com"
-          git pull --rebase
-          git add pistas.json pistas_actuales.json || true
-          if [ -n "$(git status --porcelain)" ]; then
-            git commit -m "🧩 Actualización automática de pistas disponibles"
-            git push
-          else
-            echo "Sin cambios que subir."
-          fi
 
       - name: Subir artefacto de salida
         if: always()
