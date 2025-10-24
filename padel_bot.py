@@ -14,7 +14,6 @@ time.tzset()
 
 URL = "https://www.padelcpi.com/booking/srvc.aspx/ObtenerCuadro"
 GRID_URL = "https://www.padelcpi.com/Booking/Grid.aspx"
-RESULT_FILE = "huecos.json"
 PISTAS_FILE = "pistas.json"
 PISTAS_ACTUALES_FILE = "pistas_actuales.json"
 
