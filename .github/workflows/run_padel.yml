@@ -23,7 +23,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: huecos.json
-          key: padel-cache-v4
+          key: padel-cache-v3
 
       - name: Instalar dependencias
         run: pip install requests pytz
@@ -45,7 +45,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: huecos.json
-          key: padel-cache-v4
+          key: padel-cache-v3
 
       - name: Subir artefacto de salida (opcional)
         if: always()
