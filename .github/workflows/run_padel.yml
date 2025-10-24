@@ -5,6 +5,9 @@ on:
     - cron: "*/10 * * * 1-5"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   check-padel:
     runs-on: ubuntu-latest
@@ -12,18 +15,13 @@ jobs:
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Restaurar caché del resultado anterior
-        id: cache-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: huecos.json
-          key: padel-cache-v3
 
       - name: Instalar dependencias
         run: pip install requests pytz
@@ -40,14 +38,21 @@ jobs:
         if: always()
         run: cat output.txt
 
-      - name: Guardar nueva caché
+      - name: Subir cambios si los hay
         if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: huecos.json
-          key: padel-cache-v3
+        run: |
+          git config --global user.name "Padel Bot"
+          git config --global user.email "padel-bot@users.noreply.github.com"
+          git pull --rebase
+          git add pistas.json pistas_actuales.json || true
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "🧩 Actualización automática de pistas disponibles"
+            git push
+          else
+            echo "Sin cambios que subir."
+          fi
 
-      - name: Subir artefacto de salida (opcional)
+      - name: Subir artefacto de salida
         if: always()
         uses: actions/upload-artifact@v4
         with:
