@@ -14,8 +14,7 @@ time.tzset()
 
 URL = "https://www.padelcpi.com/booking/srvc.aspx/ObtenerCuadro"
 GRID_URL = "https://www.padelcpi.com/Booking/Grid.aspx"
-PISTAS_FILE = "pistas.json"
-PISTAS_ACTUALES_FILE = "pistas_actuales.json"
+RESULT_FILE = "huecos.json"
 
 HEADERS = {
     "accept": "application/json, text/javascript, */*; q=0.01",
@@ -89,6 +88,7 @@ def merge_intervals(intervals):
     return merged
 
 
+# === BUSCAR HUECOS ===
 def buscar_huecos(json_data, franja_inicio, franja_fin, duracion_min=DURACION_MINUTOS):
     data = json_data.get("d", {})
     fecha_str = data.get("StrFecha")
@@ -141,25 +141,27 @@ def buscar_huecos(json_data, franja_inicio, franja_fin, duracion_min=DURACION_MI
     return huecos_totales
 
 
+# === FRANJAS SEGÚN DÍA ===
 def obtener_franja_por_dia(dia_semana):
     if dia_semana in range(0, 4):  # lunes a jueves
         return "18:30", "21:30"
     elif dia_semana == 4:  # viernes
         return "15:30", "18:00"
     else:
-        return None, None
+        return None, None  # sábado y domingo fuera de horario
 
 
-# === UTILIDADES JSON ===
-def cargar_json(path):
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
+# === GUARDADO Y COMPARACIÓN ===
+def cargar_resultados_previos():
+    if os.path.exists(RESULT_FILE):
+        with open(RESULT_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
 
-def guardar_json(path, data):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def guardar_resultados(resultados):
+    with open(RESULT_FILE, "w", encoding="utf-8") as f:
+        json.dump(resultados, f, ensure_ascii=False, indent=2)
 
 
 def resultados_a_dict(lista_huecos):
@@ -172,7 +174,7 @@ def resultados_a_dict(lista_huecos):
     return salida
 
 
-# === TELEGRAM ===
+# === ENVIAR TELEGRAM ===
 def enviar_telegram(mensaje):
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
@@ -191,31 +193,13 @@ def enviar_telegram(mensaje):
         print(f"❌ Error enviando Telegram: {e}")
 
 
-# === GIT COMMIT / PUSH ===
-def git_commit_and_push(commit_message):
-    """Hace commit y push automático al repositorio actual."""
-    try:
-        subprocess.run(["git", "config", "user.name", "Padel Bot"], check=True)
-        subprocess.run(["git", "config", "user.email", "padel-bot@users.noreply.github.com"], check=True)
-        subprocess.run(["git", "add", "pistas.json", "pistas_actuales.json"], check=True)
-        result = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
-        if result.stdout.strip() == "":
-            print("ℹ️ No hay cambios que commitear.")
-            return
-        subprocess.run(["git", "commit", "-m", commit_message], check=True)
-        subprocess.run(["git", "push"], check=True)
-        print("✅ Cambios subidos al repositorio correctamente.")
-    except subprocess.CalledProcessError as e:
-        print(f"⚠️ Error al hacer commit/push: {e}")
-
-
 # === MAIN ===
 if __name__ == "__main__":
     TOKEN = obtener_token()
     resultados_actuales = {}
     hoy = datetime.now().date()
 
-    for i in range(1, 4):
+    for i in range(1, 4):  # próximos 3 días
         fecha_obj = hoy + timedelta(days=i)
         dia_semana_num = fecha_obj.weekday()
         dia_semana = DIAS_ES[dia_semana_num].capitalize()
@@ -240,29 +224,18 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"⚠️ Error al procesar {fecha_obj}: {e}")
 
+    resultados_previos = cargar_resultados_previos()
     resultados_dict = resultados_a_dict(resultados_actuales)
 
-    guardar_json(PISTAS_ACTUALES_FILE, resultados_dict)
-    pistas_previas = cargar_json(PISTAS_FILE)
-
-    nuevas_pistas = {}
-    for dia, huecos in resultados_dict.items():
-        prev_huecos = pistas_previas.get(dia, [])
-        prev_set = {(h["pista"], h["inicio"], h["fin"]) for h in prev_huecos}
-        act_set = {(h["pista"], h["inicio"], h["fin"]) for h in huecos}
-        nuevas = act_set - prev_set
-        if nuevas:
-            nuevas_pistas[dia] = list(nuevas)
-
-    if nuevas_pistas:
-        mensaje = "🎾 <b>Nuevas pistas disponibles</b>\n"
-        for dia, pistas in nuevas_pistas.items():
+    if resultados_dict != resultados_previos:
+        mensaje = "🔔 <b>Novedades en reservas de pádel</b>\n"
+        for dia, huecos in resultados_actuales.items():
             mensaje += f"\n📅 <b>{dia}</b>\n"
-            for pista, inicio, fin in pistas:
-                mensaje += f"  🟢 {pista}: {inicio[-5:]} - {fin[-5:]}\n"
+            for pista, inicio, fin in huecos:
+                mensaje += f"  🟢 {pista}: {inicio.strftime('%H:%M')} - {fin.strftime('%H:%M')}\n"
+
         print(mensaje)
         enviar_telegram(mensaje)
-
-    if resultados_dict != pistas_previas:
-        guardar_json(PISTAS_FILE, resultados_dict)
-        git_commit_and_push("🧩 Actualización automática de pistas disponibles")
+        guardar_resultados(resultados_dict)
+    else:
+        sys.exit(0)
