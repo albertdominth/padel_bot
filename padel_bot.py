@@ -215,7 +215,7 @@ if __name__ == "__main__":
     resultados_actuales = {}
     hoy = datetime.now().date()
 
-    for i in range(1, 4):
+    for i in range(0, 4):
         fecha_obj = hoy + timedelta(days=i)
         dia_semana_num = fecha_obj.weekday()
         dia_semana = DIAS_ES[dia_semana_num].capitalize()
