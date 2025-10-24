@@ -5,6 +5,9 @@ on:
     - cron: "*/10 * * * 1-5"
   workflow_dispatch:
 
+permissions:
+  contents: write 
+  
 jobs:
   check-padel:
     runs-on: ubuntu-latest
